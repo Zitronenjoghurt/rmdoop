@@ -1,4 +1,3 @@
-use crate::grouping::group_identical;
 use clap::Parser;
 
 mod cli;
@@ -8,10 +7,6 @@ mod io;
 mod tests;
 
 fn main() -> anyhow::Result<()> {
-    let cli = cli::Cli::parse();
-
-    let groups = group_identical(&cli.sources, &cli.targets)?;
-    println!("{groups:#?}");
-
+    let _ = cli::Cli::parse().execute()?;
     Ok(())
 }

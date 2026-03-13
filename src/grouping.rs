@@ -1,4 +1,5 @@
 use crate::io::{FileRef, files_identical, hash_file, walk_path_group_by_size};
+use colored::Colorize;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -28,9 +29,23 @@ impl DuplicateGroup {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct GroupingConfig {
+    pub promote_random_duplicate: bool,
+    pub quiet: bool,
+    pub verbose: bool,
+}
+
+impl GroupingConfig {
+    pub fn verbose(&self) -> bool {
+        self.verbose && !self.quiet
+    }
+}
+
 pub fn group_identical(
     sources: &[PathBuf],
     targets: &[PathBuf],
+    config: GroupingConfig,
 ) -> anyhow::Result<Vec<DuplicateGroup>> {
     let mut refs_by_size: HashMap<u64, Vec<FileRef>> = HashMap::new();
 
@@ -42,6 +57,24 @@ pub fn group_identical(
         walk_path_group_by_size(target, &mut refs_by_size, true);
     }
 
+    if !config.quiet {
+        let source_count = refs_by_size
+            .values()
+            .map(|refs| refs.iter().filter(|ref_| !ref_.deletable).count())
+            .sum::<usize>();
+        let target_count = refs_by_size
+            .values()
+            .map(|refs| refs.iter().filter(|ref_| ref_.deletable).count())
+            .sum::<usize>();
+        let total_count = source_count + target_count;
+        println!(
+            "Found {} files to check for duplicates: {} source, {} target.",
+            total_count.to_string().green().bold(),
+            source_count.to_string().green().bold(),
+            target_count.to_string().yellow().bold()
+        );
+    }
+
     let hashed_groups = group_duplicates_by_hash(refs_by_size)?;
     let raw_groups = hashed_groups
         .into_values()
@@ -51,10 +84,37 @@ pub fn group_identical(
             Ok::<Vec<Vec<FileRef>>, anyhow::Error>(acc)
         })?;
 
-    let groups: Vec<DuplicateGroup> = raw_groups
+    let mut groups: Vec<DuplicateGroup> = raw_groups
         .into_iter()
         .map(DuplicateGroup::from_refs)
         .collect();
+
+    if config.promote_random_duplicate {
+        if !config.quiet {
+            let promotable_group_count = groups
+                .iter()
+                .filter(|group| group.originals.is_empty())
+                .count();
+            println!(
+                "{} target files will be promoted to source files.",
+                promotable_group_count.to_string().green().bold()
+            );
+        }
+
+        groups
+            .iter_mut()
+            .filter(|group| group.originals.is_empty())
+            .for_each(|group| {
+                let promoted = group.duplicates.remove(0);
+                if config.verbose() {
+                    println!(
+                        "Promoted {} to source file.",
+                        promoted.to_string_lossy().italic()
+                    );
+                }
+                group.originals.push(promoted);
+            });
+    }
 
     Ok(groups)
 }
