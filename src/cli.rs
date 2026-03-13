@@ -1,4 +1,4 @@
-use crate::grouping::{DuplicateGroup, group_identical};
+use crate::grouping::{group_identical, DuplicateGroup};
 use clap::{Parser, ValueHint};
 use colored::Colorize;
 use std::path::PathBuf;
@@ -29,7 +29,7 @@ pub struct Cli {
     pub list: bool,
     /// If this is true and a group of duplicate files has no source file, the first file from the group will be promoted to a source file.
     #[arg(short, long)]
-    pub promote_first_duplicate: bool,
+    pub promote: bool,
 }
 
 impl Cli {
@@ -87,7 +87,7 @@ impl Cli {
 
         if delete_count == 0 {
             println!(
-                "There are duplications, but no files would be deleted. Check that you provide source paths or use --promote-first-duplicate (-p) to automatically promote a random duplicate of each group of identical files to a source file."
+                "There are duplications, but no files would be deleted. Check that you provide source paths or use --promote (-p) to automatically promote a random duplicate of each group of identical files to a source file."
             );
         }
     }
@@ -149,7 +149,7 @@ impl Cli {
 
     fn grouping_config(&self) -> crate::grouping::GroupingConfig {
         crate::grouping::GroupingConfig {
-            promote_random_duplicate: self.promote_first_duplicate,
+            promote_random_duplicate: self.promote,
             verbose: self.verbose,
             quiet: self.quiet,
         }

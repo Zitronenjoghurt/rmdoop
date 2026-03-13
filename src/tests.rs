@@ -30,7 +30,7 @@ fn test_autonomous_with_distinct_source_and_target() -> anyhow::Result<()> {
         quiet: true,
         autonomous: true,
         list: false,
-        promote_first_duplicate: false,
+        promote: false,
     };
 
     let files_deleted = cli.execute()?;
@@ -57,7 +57,7 @@ fn test_autonomous_no_source_no_promote() -> anyhow::Result<()> {
         quiet: false,
         autonomous: true,
         list: false,
-        promote_first_duplicate: false,
+        promote: false,
     };
 
     let files_deleted = cli.execute()?;
@@ -83,7 +83,7 @@ fn test_autonomous_with_promotion() -> anyhow::Result<()> {
         quiet: false,
         autonomous: true,
         list: false,
-        promote_first_duplicate: true,
+        promote: true,
     };
 
     let files_deleted = cli.execute()?;
