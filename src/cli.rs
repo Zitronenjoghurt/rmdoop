@@ -1,4 +1,4 @@
-use crate::grouping::{group_identical, DuplicateGroup};
+use crate::grouping::{DuplicateGroup, group_identical};
 use clap::{Parser, ValueHint};
 use colored::Colorize;
 use std::path::PathBuf;
